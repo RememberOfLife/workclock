@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>WorkClock</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-SgOJa3DmI69IUzQ2PVdRZhwQ+dy64/BUtbMJw1MZ8t5HZApcHrRKUc4W0kG879m7" crossorigin="anonymous">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+        <style>
+            .monospace {
+                font-family: monospace;
+            }
+        </style>
+    </head>
+    <body>
+
+        <div class="container vh-100 d-flex flex-column justify-content-center p-0 pt-4" style="max-width: 400px;">
+    
+            <h5 class="mb-3 text-center">WorkClock</h5>
+        
+            <div class="border-start border-end border-5 border-danger mb-2" id="qs_clock_container"><!-- bg-success-subtle -->
+                <div class="text-center monospace" style="font-size: 4rem;">
+                    <span class="text-secondary opacity-50" id="qs_clock_hr2">0</span><span class="text-secondary opacity-50" id="qs_clock_hr1">0</span><span class="text-secondary opacity-50">:</span><span class="text-secondary opacity-50" id="qs_clock_min2">0</span><span class="" id="qs_clock_min1">0</span><span class="text-secondary opacity-50">:</span><span class="" id="qs_clock_sec2">0</span><span class="" id="qs_clock_sec1">0</span>
+                </div>
+            </div>
+            <span class="text-end px-2 mb-3 text-secondary" id="qs_work_end_container">
+                <span class="badge text-bg-secondary monospace fw-bold fs-6">
+                    <i class="bi-arrow-right me-1"></i><i class="bi-clock-fill me-1"></i><span id="qs_work_end_time">17:35</span>
+                </span>
+            </span>
+        
+            <div class="d-flex mx-2 mb-3">
+                <button class="btn btn-lg fs-1 btn-success w-100" id="qs_btn_clock_start"><i class="bi-play-fill"></i></button>
+                <button class="btn btn-lg fs-1 btn-warning w-100 d-none" id="qs_btn_clock_stop"><i class="bi-stop-fill"></i></button>
+            </div>
+        
+            <div class="px-3 mb-3">
+                <h6 class="mb-1">Track:</h6>
+                <div id="qs_track_list">
+                    <div class="monospace border-top border-1 border-secondary px-2">
+                        <span><span class="text-secondary opacity-50">0</span>8:25 <i class="bi-arrow-right"></i> 12:05 = <span class="text-success"><span class="opacity-50">0</span>2:40</span></span>
+                    </div>
+                    <div class="monospace border-top border-1 border-secondary px-2">
+                        <span>12:25 <i class="bi-arrow-right"></i> <span class="text-secondary opacity-50">__:__</span> = <span class="text-success"><span class="opacity-50">0</span>2:40 <div class="spinner-grow spinner-grow-sm" style="--bs-spinner-animation-speed: 1.2s;"></div></span></span>
+                    </div>
+                </div>
+                <div class="monospace px-2 border-top border-2 border-black text-end">
+                    <span class="fw-bold text-success"><i class="bi-dash-lg"></i><span class="opacity-50">0</span><span class="">2</span><span class="opacity-50">:</span><span class="">4</span><span class="">0</span></span>
+                </div>
+            </div>
+
+            <div class="mt-auto d-flex px-2 pb-2">
+                <button class="btn btn-sm btn-outline-danger w-100">RESET</button>
+            </div>
+            
+        </div>
+        
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js" integrity="sha384-k6d4wzSIapyDyv1kpU366/PK5hCdSbCRGRCMv+eplOQJWyd1fbcAu9OCUj5zNLiq" crossorigin="anonymous"></script>
+        <script>
+
+        </script>
+    </body>
+</html>
