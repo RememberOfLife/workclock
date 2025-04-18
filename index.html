@@ -24,17 +24,17 @@
                         <span class="text-secondary opacity-50">0</span><span class="text-secondary opacity-50">0</span><span class="text-secondary opacity-50">:</span><span class="text-secondary opacity-50">0</span><span class="text-secondary opacity-50">0</span><span class="text-secondary opacity-50">:</span><span class="text-secondary opacity-50">0</span><span class="text-secondary opacity-50">0</span>
                     </span>
                     <template id="qs_clock_text_subtle_template">
-                        <span class="text-secondary opacity-50"></span>
+                        <span class="qs_text text-secondary opacity-50"></span>
                     </template>
                     <template id="qs_clock_text_template">
-                        <span></span>
+                        <span class="qs_text"></span>
                     </template>
                 </div>
             </div>
 
             <span class="text-end px-2 mb-3 text-secondary d-none" id="qs_work_end_container">
                 <span class="badge text-bg-secondary monospace fw-bold fs-6">
-                    <i class="bi-arrow-right me-1"></i><i class="bi-clock-fill me-1"></i><span id="qs_work_end_time">17:35</span>
+                    <i class="bi-arrow-right me-1"></i><i class="bi-clock-fill me-1"></i><span id="qs_work_end_time">17:35</span><!-- TODO update this even while the timer is not running -->
                 </span>
             </span>
         
@@ -48,19 +48,38 @@
                 </button>
             </div>
         
-            <div class="px-3 mb-3 d-none"><!-- TODO enable track keeping table -->
+            <div class="px-3 mb-3 d-none" id="qs_track_container">
                 <h6 class="mb-1">Track:</h6>
                 <div id="qs_track_list">
-                    <div class="monospace border-top border-1 border-secondary px-2">
-                        <span><span class="text-secondary opacity-50">0</span>8:25 <i class="bi-arrow-right"></i> 12:05 = <span class="text-success"><span class="opacity-50">0</span>2:40</span></span>
-                    </div>
-                    <div class="monospace border-top border-1 border-secondary px-2">
-                        <span>12:25 <i class="bi-arrow-right"></i> <span class="text-secondary opacity-50">__:__</span> = <span class="text-success"><span class="opacity-50">0</span>2:40 <div class="spinner-grow spinner-grow-sm" style="--bs-spinner-animation-speed: 1.2s;"></div></span></span>
-                    </div>
                 </div>
+                <template id="qs_track_entry_template">
+                    <div class="monospace border-top border-1 border-secondary px-2">
+                        <span><span class="qs_track_entry_begin"></span> <i class="bi-arrow-right"></i> <span class="qs_track_entry_end"></span> = <span class="qs_track_entry_total"></span></span>
+                    </div>
+                </template>
+                <template id="qs_track_entry_live_template">
+                    <div class="monospace border-top border-1 border-secondary px-2">
+                        <span><span class="qs_track_entry_begin"></span> <i class="bi-arrow-right"></i> <span class="text-secondary opacity-50">__:__</span> = <span class="text-success"><span class="qs_track_entry_total"></span> <div class="spinner-grow spinner-grow-sm" style="--bs-spinner-animation-speed: 1.2s;"></div></span></span>
+                    </div>
+                </template>
                 <div class="monospace px-2 border-top border-2 border-black text-end">
-                    <span class="fw-bold text-success"><i class="bi-dash-lg"></i><span class="opacity-50">0</span><span class="">2</span><span class="opacity-50">:</span><span class="">4</span><span class="">0</span></span>
+                    <span class="fw-bold text-danger" id="qs_track_total_builder"></span>
                 </div>
+                <template id="qs_track_text_subtle_template">
+                    <span class="qs_text text-secondary opacity-50"></span>
+                </template>
+                <template id="qs_track_text_template">
+                    <span class="qs_text"></span>
+                </template>
+                <template id="qs_track_total_text_subtle_template">
+                    <span class="qs_text opacity-50"></span>
+                </template>
+                <template id="qs_track_total_minus_template">
+                    <i class="bi-dash-lg"></i>
+                </template>
+                <template id="qs_track_total_plus_template">
+                    <i class="bi-plus-lg"></i>
+                </template>
             </div>
 
             <div class="mt-auto d-flex px-2 pb-2">
@@ -85,7 +104,17 @@
             const ui_btn_clock_start = document.getElementById("qs_btn_clock_start");
             const ui_btn_clock_stop = document.getElementById("qs_btn_clock_stop");
 
+            const ui_track_container = document.getElementById("qs_track_container");
             const ui_track_list = document.getElementById("qs_track_list");
+            const ui_track_entry_template = document.getElementById("qs_track_entry_template");
+            const ui_track_entry_live_template = document.getElementById("qs_track_entry_live_template");
+            const ui_track_total_builder = document.getElementById("qs_track_total_builder");
+
+            const ui_track_text_subtle_template = document.getElementById("qs_track_text_subtle_template");
+            const ui_track_text_template = document.getElementById("qs_track_text_template");
+            const ui_track_total_text_subtle_template = document.getElementById("qs_track_total_text_subtle_template");
+            const ui_track_total_minus_template = document.getElementById("qs_track_total_minus_template");
+            const ui_track_total_plus_template = document.getElementById("qs_track_total_plus_template");
 
             const ui_btn_reset = document.getElementById("qs_btn_reset");
 
@@ -99,6 +128,7 @@
             const appStateDefault = {
                 accWorkTime: null,
                 curStartTime: null,
+                trackEntries: [],
             };
 
             function appStateLoad() {
@@ -126,7 +156,7 @@
                     ? timeNow - appState.curStartTime
                     : 0;
                 const timeTotal = timeAcc + timeSinceStart;
-                const timeStr = formatTime(timeTotal);
+                const timeStr = formatTimeHMS(timeTotal);
 
                 // set clock background class
                 ui_clock_container.classList.remove("bg-danger-subtle", "bg-success-subtle");
@@ -137,22 +167,28 @@
                 }
 
                 // update clock
-                ui_clock_builder.innerHTML = "";
-                let nonZeroFound = false;
-                for (const timeChar of timeStr) {
-                    let template_el;
-                    if (timeChar === ':') {
-                        template_el = ui_clock_text_subtle_template.content.firstElementChild.cloneNode(true);
-                    } else if (timeChar === '0' && !nonZeroFound) {
-                        template_el = ui_clock_text_subtle_template.content.firstElementChild.cloneNode(true);
-                    } else {
-                        template_el = ui_clock_text_template.content.firstElementChild.cloneNode(true);
-                        if (timeChar !== '0') {
-                            nonZeroFound = true;
+                {
+                    ui_clock_builder.innerHTML = "";
+                    let nonZeroFound = false;
+                    for (let i = 0; i < timeStr.length; i++) {
+                        const timeChar = timeStr[i];
+                        let templateElem;
+                        if (timeChar === ":" || (timeChar === "0" && !nonZeroFound)) {
+                            templateElem = fromTemplateByQs("#qs_clock_text_subtle_template");
+                        } else {
+                            templateElem = fromTemplateByQs("#qs_clock_text_template");
+                            if (timeChar !== "0") {
+                                nonZeroFound = true;
+                            }
                         }
+                        const qsTextElem = templateElem.querySelector(".qs_text");
+                        qsTextElem.textContent = timeChar;
+                        if (i >= 5) {
+                            qsTextElem.classList.add("fs-2");
+                        }
+                        ui_clock_builder.appendChild(templateElem);
                     }
-                    template_el.textContent = timeChar;
-                    ui_clock_builder.appendChild(template_el);
+
                 }
 
                 // update work end time if work has started
@@ -160,13 +196,13 @@
                     ui_work_end_container.classList.remove("d-none");
                     const remaining = WORKDAY_MS - timeTotal;
                     const endTimestamp = timeNow + remaining;
-                    const endTimeStr = formatTimeOfDay(endTimestamp);
+                    const endTimeStr = formatTimestampHM(endTimestamp);
                     ui_work_end_time.textContent = endTimeStr;
                 } else {
                     ui_work_end_container.classList.add("d-none");
                 }
 
-                // update general ui
+                // update start / stop buttons
                 if (appState.curStartTime) {
                     ui_btn_clock_start.classList.add("d-none");
                     ui_btn_clock_stop.classList.remove("d-none");
@@ -175,6 +211,35 @@
                     ui_btn_clock_stop.classList.add("d-none");
                     ui_btn_clock_start.classList.remove("d-none");
                     appStateDisplayStop();
+                }
+
+                if (timeTotal > 0 ){
+                    ui_track_container.classList.remove("d-none");
+
+                    const overtime = timeTotal >= WORKDAY_MS;
+                    const totalIconSrc = overtime ? ui_track_total_plus_template : ui_track_total_minus_template;
+                    const totalColorClass = overtime ? "text-success" : "text-danger";
+                    //TODO build the total time into
+                    ui_track_total_builder.innerHTML = "";
+                    ui_track_total_builder.classList.remove("text-success", "text-danger");
+                    ui_track_total_builder.classList.add(totalColorClass);
+                    ui_track_total_builder.appendChild(fromTemplateByHandle(totalIconSrc));
+                    let nonZeroFound = false;
+                    const deficit = WORKDAY_MS - timeTotal;
+                    const deficitStr = formatTimeHM(deficit);
+                    for (const timeChar of deficitStr) {
+                        let templateElem;
+                        if (timeChar === ":" || (timeChar === "0" && !nonZeroFound)) {
+                            templateElem = fromTemplateByHandle(ui_track_total_text_subtle_template);
+                        } else {
+                            templateElem = fromTemplateByHandle(ui_track_text_template);
+                            if (timeChar !== "0") {
+                                nonZeroFound = true;
+                            }
+                        }
+                        templateElem.querySelector(".qs_text").textContent = timeChar;
+                        ui_track_total_builder.appendChild(templateElem);
+                    }
                 }
             }
 
@@ -192,22 +257,70 @@
             }
 
             /////
+            // app track refresh
+
+            function appStateRebuildTrack() {
+                ui_track_list.innerHTML = "";
+
+                for (const entry of appState.trackEntries) {
+                    const isLive = entry.end === null;
+                    const startStr = formatTimestampHM(entry.start);
+
+                    const templateElem = fromTemplateByQs(isLive ? "#qs_track_entry_live_template" : "#qs_track_entry_template");
+                    templateElem.querySelector(".qs_track_entry_begin").textContent = startStr; //TODO build with subtle templates
+                    if (!isLive) {
+                        const endStr = formatTimestampHM(entry.end);
+                        const totalMs = entry.end - entry.start;
+                        const totalStr = formatTimeHM(totalMs);
+                        templateElem.querySelector(".qs_track_entry_end").textContent = endStr; //TODO build with subtle templates
+                        templateElem.querySelector(".qs_track_entry_total").textContent = totalStr; //TODO build with subtle templates
+                    }
+                    ui_track_list.appendChild(templateElem);
+                }
+            }
+
+
+            /////
             // util
 
-            function formatTime(ms) {
+            function formatTimeHMS(ms) {
                 if (!ms || ms < 0) ms = 0;
                 const totalSeconds = Math.floor(ms / 1000);
-                const hrs = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
-                const mins = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
-                const secs = String(totalSeconds % 60).padStart(2, '0');
+                const hrs = String(Math.floor(totalSeconds / 3600)).padStart(2, "0");
+                const mins = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, "0");
+                const secs = String(totalSeconds % 60).padStart(2, "0");
                 return `${hrs}:${mins}:${secs}`;
             }
 
-            function formatTimeOfDay(timestamp) {
-                const date = new Date(timestamp);
-                const hrs = String(date.getHours()).padStart(2, '0');
-                const mins = String(date.getMinutes()).padStart(2, '0');
+            function formatTimeHM(ms) {
+                if (!ms || ms < 0) ms = 0;
+                const totalSeconds = Math.floor(ms / 1000);
+                const hrs = String(Math.floor(totalSeconds / 3600)).padStart(2, "0");
+                const mins = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, "0");
                 return `${hrs}:${mins}`;
+            }
+
+            function formatTimestampHM(timestamp) {
+                const date = new Date(timestamp);
+                const hrs = String(date.getHours()).padStart(2, "0");
+                const mins = String(date.getMinutes()).padStart(2, "0");
+                return `${hrs}:${mins}`;
+            }
+
+            function fromTemplateByQs(qs) {
+                const template = document.querySelector(qs);
+                return fromTemplateByHandle(template);
+            }
+
+            function fromTemplateByHandle(template) {
+                const fragment = template.content.cloneNode(true);
+                // remove whitespace elements..
+                [...fragment.childNodes].forEach(node => {
+                    if (node.nodeType === Node.TEXT_NODE && !node.textContent.trim()) {
+                        fragment.removeChild(node);
+                    }
+                });
+                return fragment;
             }
 
             /////
@@ -216,22 +329,31 @@
             ui_btn_clock_start.addEventListener("click", () => {
                 if (appState.curStartTime) return;
 
-                appState.curStartTime = Date.now();
+                const now = Date.now() - 1;
+                appState.curStartTime = now;
+                appState.trackEntries.push({ start: now, end: null });
                 appStateSave(appState);
 
+                appStateRebuildTrack(); //TODO use dirty flag
                 appStateDisplay();
             });
 
             ui_btn_clock_stop.addEventListener("click", () => {
                 if (!appState.curStartTime) return;
-
+                
                 const now = Date.now();
                 const worked = now - appState.curStartTime;
-
                 appState.accWorkTime = (appState.accWorkTime ?? 0) + worked;
                 appState.curStartTime = null;
+                // finalize live entry
+                const lastEntry = appState.trackEntries.pop();
+                if (lastEntry) {
+                    lastEntry.end = now;
+                    appState.trackEntries.push(lastEntry);
+                }
                 appStateSave(appState);
 
+                appStateRebuildTrack(); //TODO use dirty flag
                 appStateDisplay();
             });
 
@@ -265,6 +387,7 @@
 
             let appState = appStateLoad();
             appStateSave(appState);
+            appStateRebuildTrack();
             appStateDisplay();
 
             document.addEventListener("visibilitychange", () => {
