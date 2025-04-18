@@ -23,8 +23,11 @@
                     <span id="qs_clock_builder">
                         <span class="text-secondary opacity-50">0</span><span class="text-secondary opacity-50">0</span><span class="text-secondary opacity-50">:</span><span class="text-secondary opacity-50">0</span><span class="text-secondary opacity-50">0</span><span class="text-secondary opacity-50">:</span><span class="text-secondary opacity-50">0</span><span class="text-secondary opacity-50">0</span>
                     </span>
-                    <template id="qs_clock_text_template">
+                    <template id="qs_clock_text_subtle_template">
                         <span class="text-secondary opacity-50"></span>
+                    </template>
+                    <template id="qs_clock_text_template">
+                        <span></span>
                     </template>
                 </div>
             </div>
@@ -73,6 +76,7 @@
 
             const ui_clock_container = document.getElementById("qs_clock_container");
             const ui_clock_builder = document.getElementById("qs_clock_builder");
+            const ui_clock_text_subtle_template = document.getElementById("qs_clock_text_subtle_template");
             const ui_clock_text_template = document.getElementById("qs_clock_text_template");
 
             const ui_work_end_container = document.getElementById("qs_work_end_container");
@@ -114,20 +118,31 @@
 
             let displayInterval = null;
             function appStateDisplay() {
-                const time_now = Date.now();
-                const time_acc = appState.accWorkTime ?? 0;
-                const time_since_start = appState.curStartTime
-                    ? time_now - appState.curStartTime
+                const timeNow = Date.now();
+                const timeAcc = appState.accWorkTime ?? 0;
+                const timeSinceStart = appState.curStartTime
+                    ? timeNow - appState.curStartTime
                     : 0;
-                const time_total = time_acc + time_since_start;
-                const timeStr = formatTime(time_total);
+                const timeTotal = timeAcc + timeSinceStart;
+                const timeStr = formatTime(timeTotal);
 
                 // update clock
                 ui_clock_builder.innerHTML = "";
-                for (const char of timeStr) {
-                    const el = ui_clock_text_template.content.firstElementChild.cloneNode(true);
-                    el.textContent = char;
-                    ui_clock_builder.appendChild(el);
+                let nonZeroFound = false;
+                for (const timeChar of timeStr) {
+                    let template_el;
+                    if (timeChar === ':') {
+                        template_el = ui_clock_text_subtle_template.content.firstElementChild.cloneNode(true);
+                    } else if (timeChar === '0' && !nonZeroFound) {
+                        template_el = ui_clock_text_subtle_template.content.firstElementChild.cloneNode(true);
+                    } else {
+                        template_el = ui_clock_text_template.content.firstElementChild.cloneNode(true);
+                        if (timeChar !== '0') {
+                            nonZeroFound = true;
+                        }
+                    }
+                    template_el.textContent = timeChar;
+                    ui_clock_builder.appendChild(template_el);
                 }
 
                 // update general ui
