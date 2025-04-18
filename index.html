@@ -94,7 +94,8 @@
 
             const APP_STATE_KEY = "workclockAppState";
 
-            const WORKDAY_MS = 8 * 60 * 60 * 1000; // 8 hours in milliseconds
+            // const WORKDAY_MS = 8 * 60 * 60 * 1000; // 8 hours in milliseconds
+            const WORKDAY_MS = 1 * 60 * 60 * 1000; // 8 hours in milliseconds
 
             const appStateDefault = {
                 accWorkTime: null,
@@ -155,6 +156,17 @@
                     ui_clock_builder.appendChild(template_el);
                 }
 
+                // update work end time if work has started
+                if (timeTotal > 0) {
+                    ui_work_end_container.classList.remove("d-none");
+                    const remaining = WORKDAY_MS - timeTotal;
+                    const endTimestamp = timeNow + remaining;
+                    const endTimeStr = formatTimeOfDay(endTimestamp);
+                    ui_work_end_time.textContent = endTimeStr;
+                } else {
+                    ui_work_end_container.classList.add("d-none");
+                }
+
                 // update general ui
                 if (appState.curStartTime) {
                     ui_btn_clock_start.classList.add("d-none");
@@ -168,6 +180,7 @@
             }
 
             function appStateDisplayStart() {
+                if (document.hidden) return;
                 if (displayInterval) {
                     appStateDisplayStop();
                 }
@@ -189,6 +202,13 @@
                 const mins = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
                 const secs = String(totalSeconds % 60).padStart(2, '0');
                 return `${hrs}:${mins}:${secs}`;
+            }
+
+            function formatTimeOfDay(timestamp) {
+                const date = new Date(timestamp);
+                const hrs = String(date.getHours()).padStart(2, '0');
+                const mins = String(date.getMinutes()).padStart(2, '0');
+                return `${hrs}:${mins}`;
             }
 
             /////
@@ -247,6 +267,14 @@
             let appState = appStateLoad();
             appStateSave(appState);
             appStateDisplay();
+
+            document.addEventListener("visibilitychange", () => {
+                if (document.hidden) {
+                    appStateDisplayStop();
+                } else {
+                    appStateDisplay();
+                }
+            });
 
         </script>
     </body>
