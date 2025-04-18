@@ -94,6 +94,8 @@
 
             const APP_STATE_KEY = "workclockAppState";
 
+            const WORKDAY_MS = 8 * 60 * 60 * 1000; // 8 hours in milliseconds
+
             const appStateDefault = {
                 accWorkTime: null,
                 curStartTime: null,
@@ -126,6 +128,14 @@
                 const timeTotal = timeAcc + timeSinceStart;
                 const timeStr = formatTime(timeTotal);
 
+                // set clock background class
+                ui_clock_container.classList.remove("bg-danger-subtle", "bg-success-subtle");
+                if (timeTotal >= WORKDAY_MS) {
+                    ui_clock_container.classList.add("bg-success-subtle");
+                } else {
+                    ui_clock_container.classList.add("bg-danger-subtle");
+                }
+
                 // update clock
                 ui_clock_builder.innerHTML = "";
                 let nonZeroFound = false;
@@ -149,16 +159,18 @@
                 if (appState.curStartTime) {
                     ui_btn_clock_start.classList.add("d-none");
                     ui_btn_clock_stop.classList.remove("d-none");
-
                     appStateDisplayStart();
                 } else {
                     ui_btn_clock_stop.classList.add("d-none");
                     ui_btn_clock_start.classList.remove("d-none");
-
+                    appStateDisplayStop();
                 }
             }
 
             function appStateDisplayStart() {
+                if (displayInterval) {
+                    appStateDisplayStop();
+                }
                 displayInterval = setInterval(appStateDisplay, 1000);
             }
 
@@ -189,7 +201,6 @@
                 appStateSave(appState);
 
                 appStateDisplay();
-                appStateDisplayStart();
             });
 
             ui_btn_clock_stop.addEventListener("click", () => {
@@ -203,7 +214,6 @@
                 appStateSave(appState);
 
                 appStateDisplay();
-                appStateDisplayStop();
             });
 
             /////
