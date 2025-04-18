@@ -57,6 +57,9 @@
         
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js" integrity="sha384-k6d4wzSIapyDyv1kpU366/PK5hCdSbCRGRCMv+eplOQJWyd1fbcAu9OCUj5zNLiq" crossorigin="anonymous"></script>
         <script>
+            /////
+            // ui handles
+
             const ui_clock_container = document.getElementById("qs_clock_container");
             const ui_clock_hr2 = document.getElementById("qs_clock_hr2");
             const ui_clock_hr1 = document.getElementById("qs_clock_hr1");
@@ -75,7 +78,60 @@
 
             const ui_btn_reset = document.getElementById("qs_btn_reset");
 
+            /////
+            // app
 
+            const APP_STATE_KEY = "workclockAppState";
+
+            const appStateDefault = {
+                isTracking: false,
+                startTime: null,
+                entries: [],
+                totalWorkedToday: 0,
+                endTime: null
+            };
+
+            function appStateLoad() {
+                const state = localStorage.getItem(APP_STATE_KEY);
+                return state ? JSON.parse(state) : { ...appStateDefault };
+            }
+
+            function appStateSave(state) {
+                localStorage.setItem(APP_STATE_KEY, JSON.stringify(state));
+            }
+
+            function appStateReset() {
+                localStorage.removeItem(APP_STATE_KEY);
+                window.location.reload();
+            }
+
+            let appState = appStateLoad();
+            appStateSave(appState);
+
+            /////
+            // reset
+
+            let resetPrimed = false;
+            let resetTimeout = null;
+
+            ui_btn_reset.addEventListener("click", () => {
+                if (resetPrimed) {
+                    appStateReset();
+                    return;
+                }
+
+                resetPrimed = true;
+                ui_btn_reset.classList.remove("btn-outline-danger");
+                ui_btn_reset.classList.add("btn-danger");
+                ui_btn_reset.innerText = "CONFIRM RESET";
+
+                resetTimeout = setTimeout(() => {
+                    resetPrimed = false;
+                    ui_btn_reset.classList.add("btn-outline-danger");
+                    ui_btn_reset.classList.remove("btn-danger");
+                    ui_btn_reset.innerText = "RESET";
+                }, 2000);
+            });
 
         </script>
     </body>
