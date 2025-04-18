@@ -18,23 +18,34 @@
     
             <h5 class="mb-3 text-center">WorkClock</h5>
         
-            <div class="border-start border-end border-5 border-danger mb-2" id="qs_clock_container"><!-- bg-success-subtle -->
+            <div class="border-start border-end border-5 border-secondary mb-2" id="qs_clock_container"><!-- bg-success-subtle -->
                 <div class="text-center monospace" style="font-size: 4rem;">
-                    <span class="text-secondary opacity-50" id="qs_clock_hr2">0</span><span class="text-secondary opacity-50" id="qs_clock_hr1">0</span><span class="text-secondary opacity-50">:</span><span class="text-secondary opacity-50" id="qs_clock_min2">0</span><span class="" id="qs_clock_min1">0</span><span class="text-secondary opacity-50">:</span><span class="" id="qs_clock_sec2">0</span><span class="" id="qs_clock_sec1">0</span>
+                    <span id="qs_clock_builder">
+                        <span class="text-secondary opacity-50">0</span><span class="text-secondary opacity-50">0</span><span class="text-secondary opacity-50">:</span><span class="text-secondary opacity-50">0</span><span class="text-secondary opacity-50">0</span><span class="text-secondary opacity-50">:</span><span class="text-secondary opacity-50">0</span><span class="text-secondary opacity-50">0</span>
+                    </span>
+                    <template id="qs_clock_text_template">
+                        <span class="text-secondary opacity-50"></span>
+                    </template>
                 </div>
             </div>
-            <span class="text-end px-2 mb-3 text-secondary" id="qs_work_end_container">
+
+            <span class="text-end px-2 mb-3 text-secondary d-none" id="qs_work_end_container"><!-- TODO enable work end display -->
                 <span class="badge text-bg-secondary monospace fw-bold fs-6">
                     <i class="bi-arrow-right me-1"></i><i class="bi-clock-fill me-1"></i><span id="qs_work_end_time">17:35</span>
                 </span>
             </span>
         
             <div class="d-flex mx-2 mb-3">
-                <button class="btn btn-lg fs-1 btn-success w-100" id="qs_btn_clock_start"><i class="bi-play-fill"></i></button>
-                <button class="btn btn-lg fs-1 btn-warning w-100 d-none" id="qs_btn_clock_stop"><i class="bi-stop-fill"></i></button>
+                <button class="btn btn-lg fs-1 btn-success w-100 position-relative" id="qs_btn_clock_start">
+                    <i class="bi-play-fill"></i>
+                </button>
+                <button class="btn btn-lg fs-1 btn-warning w-100 position-relative d-none" id="qs_btn_clock_stop">
+                    <i class="bi-stop-fill"></i>
+                    <!-- TODO overlay spinner -->
+                </button>
             </div>
         
-            <div class="px-3 mb-3">
+            <div class="px-3 mb-3 d-none"><!-- TODO enable track keeping table -->
                 <h6 class="mb-1">Track:</h6>
                 <div id="qs_track_list">
                     <div class="monospace border-top border-1 border-secondary px-2">
@@ -61,12 +72,8 @@
             // ui handles
 
             const ui_clock_container = document.getElementById("qs_clock_container");
-            const ui_clock_hr2 = document.getElementById("qs_clock_hr2");
-            const ui_clock_hr1 = document.getElementById("qs_clock_hr1");
-            const ui_clock_min2 = document.getElementById("qs_clock_min2");
-            const ui_clock_min1 = document.getElementById("qs_clock_min1");
-            const ui_clock_sec2 = document.getElementById("qs_clock_sec2");
-            const ui_clock_sec1 = document.getElementById("qs_clock_sec1");
+            const ui_clock_builder = document.getElementById("qs_clock_builder");
+            const ui_clock_text_template = document.getElementById("qs_clock_text_template");
 
             const ui_work_end_container = document.getElementById("qs_work_end_container");
 
@@ -79,16 +86,13 @@
             const ui_btn_reset = document.getElementById("qs_btn_reset");
 
             /////
-            // app
+            // app core
 
             const APP_STATE_KEY = "workclockAppState";
 
             const appStateDefault = {
-                isTracking: false,
-                startTime: null,
-                entries: [],
-                totalWorkedToday: 0,
-                endTime: null
+                accWorkTime: null,
+                curStartTime: null,
             };
 
             function appStateLoad() {
@@ -105,8 +109,87 @@
                 window.location.reload();
             }
 
-            let appState = appStateLoad();
-            appStateSave(appState);
+            /////
+            // app display
+
+            let displayInterval = null;
+            function appStateDisplay() {
+                const time_now = Date.now();
+                const time_acc = appState.accWorkTime ?? 0;
+                const time_since_start = appState.curStartTime
+                    ? time_now - appState.curStartTime
+                    : 0;
+                const time_total = time_acc + time_since_start;
+                const timeStr = formatTime(time_total);
+
+                // update clock
+                ui_clock_builder.innerHTML = "";
+                for (const char of timeStr) {
+                    const el = ui_clock_text_template.content.firstElementChild.cloneNode(true);
+                    el.textContent = char;
+                    ui_clock_builder.appendChild(el);
+                }
+
+                // update general ui
+                if (appState.curStartTime) {
+                    ui_btn_clock_start.classList.add("d-none");
+                    ui_btn_clock_stop.classList.remove("d-none");
+
+                    appStateDisplayStart();
+                } else {
+                    ui_btn_clock_stop.classList.add("d-none");
+                    ui_btn_clock_start.classList.remove("d-none");
+
+                }
+            }
+
+            function appStateDisplayStart() {
+                displayInterval = setInterval(appStateDisplay, 1000);
+            }
+
+            function appStateDisplayStop() {
+                clearInterval(displayInterval);
+                displayInterval = null;
+            }
+
+            /////
+            // util
+
+            function formatTime(ms) {
+                if (!ms || ms < 0) ms = 0;
+                const totalSeconds = Math.floor(ms / 1000);
+                const hrs = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
+                const mins = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
+                const secs = String(totalSeconds % 60).padStart(2, '0');
+                return `${hrs}:${mins}:${secs}`;
+            }
+
+            /////
+            // start / stop buttons
+
+            ui_btn_clock_start.addEventListener("click", () => {
+                if (appState.curStartTime) return;
+
+                appState.curStartTime = Date.now();
+                appStateSave(appState);
+
+                appStateDisplay();
+                appStateDisplayStart();
+            });
+
+            ui_btn_clock_stop.addEventListener("click", () => {
+                if (!appState.curStartTime) return;
+
+                const now = Date.now();
+                const worked = now - appState.curStartTime;
+
+                appState.accWorkTime = (appState.accWorkTime ?? 0) + worked;
+                appState.curStartTime = null;
+                appStateSave(appState);
+
+                appStateDisplay();
+                appStateDisplayStop();
+            });
 
             /////
             // reset
@@ -132,6 +215,13 @@
                     ui_btn_reset.innerText = "RESET";
                 }, 2000);
             });
+
+            /////
+            // start app
+
+            let appState = appStateLoad();
+            appStateSave(appState);
+            appStateDisplay();
 
         </script>
     </body>
