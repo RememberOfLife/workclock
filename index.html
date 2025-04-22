@@ -168,6 +168,7 @@
 
                 // update clock
                 {
+                    //TODO this and the other such ones need to move to a util function
                     ui_clock_builder.innerHTML = "";
                     let nonZeroFound = false;
                     for (let i = 0; i < timeStr.length; i++) {
@@ -219,13 +220,13 @@
                     const overtime = timeTotal >= WORKDAY_MS;
                     const totalIconSrc = overtime ? ui_track_total_plus_template : ui_track_total_minus_template;
                     const totalColorClass = overtime ? "text-success" : "text-danger";
-                    //TODO build the total time into
+                    // build the track total time "remaining"
                     ui_track_total_builder.innerHTML = "";
                     ui_track_total_builder.classList.remove("text-success", "text-danger");
                     ui_track_total_builder.classList.add(totalColorClass);
                     ui_track_total_builder.appendChild(fromTemplateByHandle(totalIconSrc));
                     let nonZeroFound = false;
-                    const deficit = WORKDAY_MS - timeTotal;
+                    const deficit = overtime ? timeTotal - WORKDAY_MS : WORKDAY_MS - timeTotal;
                     const deficitStr = formatTimeHM(deficit);
                     for (const timeChar of deficitStr) {
                         let templateElem;
@@ -282,6 +283,8 @@
 
             /////
             // util
+
+            //TODO could add param for either floor or ceil, so that the deficit time could use ceil, while we havent reached overtime yet
 
             function formatTimeHMS(ms) {
                 if (!ms || ms < 0) ms = 0;
@@ -387,7 +390,7 @@
 
             let appState = appStateLoad();
             appStateSave(appState);
-            appStateRebuildTrack();
+            appStateRebuildTrack(); //TODO use dirty flag
             appStateDisplay();
 
             document.addEventListener("visibilitychange", () => {
